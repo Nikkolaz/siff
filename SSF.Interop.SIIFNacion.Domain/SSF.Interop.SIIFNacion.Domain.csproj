@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MediatR" Version="12.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="ArchivoGenerado\" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Compile Remove="..\SIIF NACION Jairo\**" />
+    <EmbeddedResource Remove="..\SIIF NACION Jairo\**" />
+    <None Remove="..\SIIF NACION Jairo\**" />
+  </ItemGroup>
+
+</Project>

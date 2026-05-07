@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>SSF.Interop.SIIFNacion.Installer</RootNamespace>
+    <AssemblyTitle>Instalador SIIF Nación</AssemblyTitle>
+    <Description>Herramienta para editar appsettings y desplegar API (IIS) y Worker (servicio Windows).</Description>
+  </PropertyGroup>
+
+  <!-- Plantillas: mismos archivos que en el repo; al publicar el instalador se copian a Defaults\ -->
+  <ItemGroup>
+    <Content Include="..\SSF.Interop.SIIFNacion.API\appsettings.json" Link="Defaults\ApiAppsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\SSF.Interop.SIIFNacion.Worker\appsettings.json" Link="Defaults\WorkerAppsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.10" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SSF.Interop.SIIFNacion.Application\SSF.Interop.SIIFNacion.Application.csproj" />
+    <ProjectReference Include="..\SSF.Interop.SIIFNacion.Domain\SSF.Interop.SIIFNacion.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="..\SIIF NACION Jairo\**" />
+    <EmbeddedResource Remove="..\SIIF NACION Jairo\**" />
+    <None Remove="..\SIIF NACION Jairo\**" />
+  </ItemGroup>
+
+</Project>
