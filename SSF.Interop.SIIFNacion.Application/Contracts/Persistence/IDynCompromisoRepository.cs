@@ -16,5 +16,11 @@ namespace SSF.Interop.SIIFNacion.Application.Contracts.Persistence
 
         /// <summary>Realiza un Insert o Update del detalle del compromiso (HU 6).</summary>
         Task UpsertDetailAsync(DynTblCCompPtal compromiso, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Elimina todos los registros de DYNTBLCCOMPPTAL y DYNTBLLISTITEMSAFE para
+        /// la vigencia indicada. Se usa en la estrategia Wipe &amp; Load antes de repoblar.
+        /// </summary>
+        Task WipeByVigenciaAsync(string vigencia, CancellationToken cancellationToken);
     }
 }

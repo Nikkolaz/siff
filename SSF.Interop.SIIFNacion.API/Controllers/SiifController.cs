@@ -272,12 +272,11 @@ namespace SSF.Interop.SIIFNacion.API.Controllers
 
             var command = new SincronizarDetalleCompromisoRPCommand
             {
-                CodPciHeader = codPciHeader ?? request.CodPciHeader,
+                CodPciHeader           = codPciHeader ?? request.CodPciHeader,
                 LoginUsuarioSiifHeader = loginUsuarioSiifHeader ?? request.LoginUsuarioSiifHeader,
-                ConsecutivoHeader = consecutivoHeader ?? request.ConsecutivoHeader,
-                HashHeader = hashHeader ?? request.HashHeader,
-                Pci = request.Pci,
-                Vigencia = request.Vigencia
+                ConsecutivoHeader      = consecutivoHeader ?? request.ConsecutivoHeader,
+                HashHeader             = hashHeader ?? request.HashHeader,
+                Vigencia               = request.Vigencia
             };
 
             var result = await _mediator.Send(command, cancellationToken);

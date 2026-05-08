@@ -129,5 +129,46 @@ namespace SSF.Interop.SIIFNacion.Persistence.Repositories.GenericRepositories
                 throw;
             }
         }
+
+        /// <inheritdoc/>
+        public async Task WipeByVigenciaAsync(string vigencia, CancellationToken cancellationToken)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                // 1. Obtener los OID de los compromisos de esta vigencia para borrar sus ítems
+                var oidsCompromiso = await _context.Compromisos
+                    .Where(c => c.AnioVigencia == vigencia)
+                    .Select(c => c.IdCompromiso)
+                    .ToListAsync(cancellationToken);
+
+                // 2. Borrar ítems (hijos) primero para evitar violación de FK
+                if (oidsCompromiso.Any())
+                {
+                    var itemsAEliminar = await _context.Items
+                        .Where(i => oidsCompromiso.Contains(i.IdCompromiso))
+                        .ToListAsync(cancellationToken);
+
+                    if (itemsAEliminar.Any())
+                        _context.Items.RemoveRange(itemsAEliminar);
+                }
+
+                // 3. Borrar compromisos (padres)
+                var compromisosAEliminar = await _context.Compromisos
+                    .Where(c => c.AnioVigencia == vigencia)
+                    .ToListAsync(cancellationToken);
+
+                if (compromisosAEliminar.Any())
+                    _context.Compromisos.RemoveRange(compromisosAEliminar);
+
+                await _context.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+        }
     }
 }
