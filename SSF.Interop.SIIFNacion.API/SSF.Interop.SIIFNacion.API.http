@@ -1,0 +1,6 @@
+@Intexus.IHI.CMSManager_HostAddress = http://localhost:5038
+
+GET {{Intexus.IHI.CMSManager_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,14 @@
+﻿using SSF.Interop.SIIFNacion.Service.Domain.Auditoria;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace SSF.Interop.SIIFNacion.Service.Application.Contracts.Persistence
+{
+    public interface IRefTiposEtapaRepository
+    {
+        Task<RefTipoEtapa?> GetByCodigoAsync(string codigoEtapa);
+    }
+}

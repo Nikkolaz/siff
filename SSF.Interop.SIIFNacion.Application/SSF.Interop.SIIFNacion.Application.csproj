@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Behaviors\" />
+    <Folder Include="Constants\" />
+    <Folder Include="Contracts\Infrastructure\" />
+    <Folder Include="Exceptions\" />
+    <Folder Include="Features\ArchivosGenerados\Requests\Commands\" />
+    <Folder Include="Features\SIIF\Handlers\" />
+    <Folder Include="Features\Cross\" />
+    <Folder Include="Features\SIIF\Requests\Commands\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="14.0.0" />
+    <PackageReference Include="FluentValidation" Version="12.0.0" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
+    <PackageReference Include="MediatR" Version="12.5.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.5" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SSF.Interop.SIIFNacion.Domain\SSF.Interop.SIIFNacion.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="..\SIIF NACION Jairo\**" />
+    <EmbeddedResource Remove="..\SIIF NACION Jairo\**" />
+    <None Remove="..\SIIF NACION Jairo\**" />
+  </ItemGroup>
+
+</Project>

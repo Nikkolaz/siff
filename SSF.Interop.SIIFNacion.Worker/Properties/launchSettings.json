@@ -1,0 +1,15 @@
+{
+  "profiles": {
+    "Dev": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    },
+    "Prd": {
+      "commandName": "Project",
+      "dotnetRunMessages": true
+    }
+  }
+}
