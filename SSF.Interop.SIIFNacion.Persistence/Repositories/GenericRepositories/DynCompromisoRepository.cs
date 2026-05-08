@@ -44,5 +44,90 @@ namespace SSF.Interop.SIIFNacion.Persistence.Repositories.GenericRepositories
             return await _context.Compromisos
                 .AnyAsync(c => c.IdCompromiso.HasValue && c.IdCompromiso.Value == idCompromiso, cancellationToken);
         }
+
+        /// <inheritdoc/>
+        public async Task UpsertDetailAsync(DynTblCCompPtal compromiso, CancellationToken cancellationToken)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                // Buscamos por la llave de negocio: IdCompromiso (SIIF Code)
+                // Nota: El prompt menciona PCI + CodCompromiso + Vigencia, pero en este esquema 
+                // IdCompromiso ya es el identificador único que viene de SIIF.
+                var existente = await _context.Compromisos
+                    .Include(c => c.Items)
+                    .FirstOrDefaultAsync(c => c.IdCompromiso == compromiso.IdCompromiso, cancellationToken);
+
+                if (existente == null)
+                {
+                    // INSERT
+                    compromiso.Oid = Guid.NewGuid().ToString("N").ToUpperInvariant();
+                    compromiso.BnCreated = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    compromiso.NrVersion = 1;
+
+                    var items = compromiso.Items.ToList();
+                    compromiso.Items = new List<DynTblListItemsAfe>();
+
+                    await _context.Compromisos.AddAsync(compromiso, cancellationToken);
+                    await _context.SaveChangesAsync(cancellationToken);
+
+                    foreach (var item in items)
+                    {
+                        item.Oid = Guid.NewGuid().ToString("N").ToUpperInvariant();
+                        item.IdCompromiso = compromiso.IdCompromiso; // Referencia por Id de Negocio
+                        item.BnCreated = compromiso.BnCreated;
+                    }
+                    await _context.Items.AddRangeAsync(items, cancellationToken);
+                }
+                else
+                {
+                    // UPDATE
+                    existente.BnUpdated = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    existente.NrVersion++;
+                    
+                    // Actualizar campos financieros y administrativos
+                    existente.Estado = compromiso.Estado;
+                    existente.Descripcion = compromiso.Descripcion;
+                    existente.Objeto = compromiso.Objeto;
+                    existente.ValorInicial = compromiso.ValorInicial;
+                    existente.VlIniOriMoneda = compromiso.VlIniOriMoneda;
+                    existente.VlTOperacion = compromiso.VlTOperacion;
+                    existente.ValorActual = compromiso.ValorActual;
+                    existente.SaldoXObligar = compromiso.SaldoXObligar;
+                    existente.SaldoMoneda = compromiso.SaldoMoneda;
+                    existente.FechaCarga = compromiso.FechaCarga;
+                    
+                    // Tercero y Banco
+                    existente.TerceroNm = compromiso.TerceroNm;
+                    existente.CuentaNn = compromiso.CuentaNn;
+                    existente.CuentaEntFinan = compromiso.CuentaEntFinan;
+                    existente.CuentaTipo = compromiso.CuentaTipo;
+                    existente.CuentaEstado = compromiso.CuentaEstado;
+
+                    // Reemplazar items (Borrar y volver a insertar para simplicidad en detalle variable)
+                    if (existente.Items.Any())
+                    {
+                        _context.Items.RemoveRange(existente.Items);
+                    }
+
+                    foreach (var item in compromiso.Items)
+                    {
+                        item.Oid = Guid.NewGuid().ToString("N").ToUpperInvariant();
+                        item.IdCompromiso = existente.IdCompromiso;
+                        item.BnCreated = existente.BnCreated;
+                        item.BnUpdated = existente.BnUpdated;
+                        _context.Items.Add(item);
+                    }
+                }
+
+                await _context.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+        }
     }
 }

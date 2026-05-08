@@ -136,5 +136,18 @@ namespace SSF.Interop.SIIFNacion.Persistence.Repositories.GenericRepositories
 
             await _context.SaveChangesAsync(cancellationToken);
         }
+
+        /// <inheritdoc/>
+        public async Task<IEnumerable<DynTblCompromPagin>> GetRecordsToSyncAsync(string pci, string vigenciaCod, CancellationToken cancellationToken)
+        {
+            var ventana = DateTime.Today.AddDays(-3);
+
+            return await _context.CompromPagin
+                .Where(c => c.VigenciaCod == vigenciaCod
+                         && c.FechaCarga >= ventana
+                         && c.CodCompromiso != null
+                         && c.CodCompromiso > 0)   // ✅ Excluye registros sin código válido
+                .ToListAsync(cancellationToken);
+        }
     }
 }

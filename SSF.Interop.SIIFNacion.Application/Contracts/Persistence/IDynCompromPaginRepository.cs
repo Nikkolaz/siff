@@ -12,5 +12,6 @@ namespace SSF.Interop.SIIFNacion.Application.Contracts.Persistence
         Task<bool> ExistsAsync(decimal codCompromiso, string anioVigencia, CancellationToken cancellationToken);
         Task DeleteByAnioVigenciaAsync(string anioVigencia, CancellationToken cancellationToken);
         Task UpsertCompromisosAsync(IEnumerable<DynTblCompromPagin> registros, CancellationToken cancellationToken);
+        Task<IEnumerable<DynTblCompromPagin>> GetRecordsToSyncAsync(string pci, string anioVigencia, CancellationToken cancellationToken);
     }
 }

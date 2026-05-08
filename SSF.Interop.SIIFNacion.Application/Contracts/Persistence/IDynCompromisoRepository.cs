@@ -13,5 +13,8 @@ namespace SSF.Interop.SIIFNacion.Application.Contracts.Persistence
 
         /// <summary>Verifica si ya existe un compromiso por su IdCompromiso.</summary>
         Task<bool> ExistsAsync(decimal idCompromiso, CancellationToken cancellationToken);
+
+        /// <summary>Realiza un Insert o Update del detalle del compromiso (HU 6).</summary>
+        Task UpsertDetailAsync(DynTblCCompPtal compromiso, CancellationToken cancellationToken);
     }
 }

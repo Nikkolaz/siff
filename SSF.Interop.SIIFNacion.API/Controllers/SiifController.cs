@@ -5,7 +5,9 @@ using SSF.Interop.SIIFNacion.Application.DTOs.External.SIIF.Contracts;
 using SSF.Interop.SIIFNacion.Application.DTOs.External.SIIF.Common;
 using SSF.Interop.SIIFNacion.Application.Features.SIIF.Requests.Commands.SincronizarListaObligaciones;
 using SSF.Interop.SIIFNacion.Application.Features.SIIF.Requests.Commands.CoordinadorSincronizacionRp;
+using SSF.Interop.SIIFNacion.Application.Features.SIIF.Requests.Commands.SincronizarDetalleCompromisoRP;
 using SSF.Interop.SIIFNacion.Application.Features.SIIF.Requests.Queries;
+using SSF.Interop.SIIFNacion.Application.DTOs.External.SIIF.Response;
 
 namespace SSF.Interop.SIIFNacion.API.Controllers
 {
@@ -248,6 +250,34 @@ namespace SSF.Interop.SIIFNacion.API.Controllers
                 LoginUsuarioSiifHeader = loginUsuarioSiifHeader,
                 ConsecutivoHeader      = consecutivoHeader,
                 HashHeader             = hashHeader
+            };
+
+            var result = await _mediator.Send(command, cancellationToken);
+            return Ok(result);
+        }
+
+        [HttpPost("sincronizar-detalle-rp")]
+        [ProducesResponseType(typeof(SincronizarDetalleCompromisoRPResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> SincronizarDetalleRp(
+            [FromHeader(Name = "codPCI")] string? codPciHeader,
+            [FromHeader(Name = "loginUsuarioSIIF")] string? loginUsuarioSiifHeader,
+            [FromHeader(Name = "consecutivo")] string? consecutivoHeader,
+            [FromHeader(Name = "hash")] string? hashHeader,
+            [FromBody] SincronizarDetalleCompromisoRPApiRequest request,
+            CancellationToken cancellationToken)
+        {
+            if (request is null) return BadRequest("La solicitud no puede ser nula.");
+
+            var command = new SincronizarDetalleCompromisoRPCommand
+            {
+                CodPciHeader = codPciHeader ?? request.CodPciHeader,
+                LoginUsuarioSiifHeader = loginUsuarioSiifHeader ?? request.LoginUsuarioSiifHeader,
+                ConsecutivoHeader = consecutivoHeader ?? request.ConsecutivoHeader,
+                HashHeader = hashHeader ?? request.HashHeader,
+                Pci = request.Pci,
+                Vigencia = request.Vigencia
             };
 
             var result = await _mediator.Send(command, cancellationToken);
