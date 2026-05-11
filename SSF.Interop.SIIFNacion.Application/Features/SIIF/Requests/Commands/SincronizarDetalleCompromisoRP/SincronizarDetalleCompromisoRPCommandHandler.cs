@@ -38,13 +38,10 @@ namespace SSF.Interop.SIIFNacion.Application.Features.SIIF.Requests.Commands.Sin
     public class SincronizarDetalleCompromisoRPCommandHandler
         : IRequestHandler<SincronizarDetalleCompromisoRPCommand, SincronizarDetalleCompromisoRPResponseDto>
     {
-        // ── Constantes de consulta (hardcodeadas por requerimiento del servicio paginado) ──
-        private const string PciConsulta = "36-01-07";
-        private const string TipoGasto   = "Todos";
-        private const string Rango       = "Todos";
-        private const int    PageSize    = 50;
-        private const string FechaInicio = "2026-01-15";
-        private const string FechaFin    = "2026-01-31";
+        // ── Constantes fijas del servicio ──────────────────────────────────────────────────
+        private const string TipoGasto = "Todos";
+        private const string Rango     = "Todos";
+        private const int    PageSize  = 50;
 
         private readonly ISiifBudgetService         _siifBudgetService;
         private readonly IDynCompromPaginRepository  _paginRepository;
@@ -131,9 +128,9 @@ namespace SSF.Interop.SIIFNacion.Application.Features.SIIF.Requests.Commands.Sin
                         PaginationDto = new PaginationDto { Page = currentPage, Size = PageSize },
                         ConsultaCompromiso = new ConsultaCompromisoFiltroDto
                         {
-                            PCI         = PciConsulta,
-                            FechaInicio = FechaInicio,
-                            FechaFin    = FechaFin,
+                            PCI         = request.Pci,
+                            FechaInicio = request.FechaInicio,
+                            FechaFin    = request.FechaFin,
                             TipoGasto   = TipoGasto,
                             Rango       = Rango,
                             Vigencia    = request.Vigencia
@@ -237,9 +234,9 @@ namespace SSF.Interop.SIIFNacion.Application.Features.SIIF.Requests.Commands.Sin
                     // ── Construir body de detalle usando Vigencia + id_compromiso ──
                     var bodyDetalle = new ConsultarCompromisoRequestDto
                     {
-                        Pci                   = PciConsulta,
+                        Pci                      = request.Pci,
                         CodCompromisoPptalGastos = codRp,
-                        Vigencia              = vigenciaSiif
+                        Vigencia                 = vigenciaSiif
                     };
 
                     var detalle = await _siifBudgetService

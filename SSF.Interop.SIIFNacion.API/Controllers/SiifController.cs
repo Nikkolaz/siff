@@ -276,7 +276,10 @@ namespace SSF.Interop.SIIFNacion.API.Controllers
                 LoginUsuarioSiifHeader = loginUsuarioSiifHeader ?? request.LoginUsuarioSiifHeader,
                 ConsecutivoHeader      = consecutivoHeader ?? request.ConsecutivoHeader,
                 HashHeader             = hashHeader ?? request.HashHeader,
-                Vigencia               = request.Vigencia
+                Vigencia               = request.Vigencia,
+                Pci                    = request.Pci,
+                FechaInicio            = request.FechaInicio,
+                FechaFin               = request.FechaFin
             };
 
             var result = await _mediator.Send(command, cancellationToken);
