@@ -22,15 +22,18 @@ namespace SSF.Interop.SIIFNacion.Application.Features.SIIF.Requests.Queries
     {
         private readonly ISiifBudgetService _siifBudgetService;
         private readonly IDynCompromPaginRepository _repository;
+        private readonly IDynCompromisoRepository _detailRepository;
         private readonly IAuditoriaLogger _audit;
 
         public ConsultarCompromisoPaginadoQueryHandler(
             ISiifBudgetService siifBudgetService,
             IDynCompromPaginRepository repository,
+            IDynCompromisoRepository detailRepository,
             IAuditoriaLogger audit)
         {
             _siifBudgetService = siifBudgetService;
             _repository        = repository;
+            _detailRepository  = detailRepository;
             _audit             = audit;
         }
 
@@ -196,6 +199,74 @@ namespace SSF.Interop.SIIFNacion.Application.Features.SIIF.Requests.Queries
                 lastResponse.consultaCompromisoSal = todosLosRegistros;
             }
 
+            // ── 6. FASE 2: Wipe detalle + consulta individual por cada RP ──────────────
+            if (todosLosRegistros.Count > 0)
+            {
+                var anioVigForWipe = request.Vigencia ?? DateTime.UtcNow.Year.ToString();
+                var vigenciaSiif   = request.Vigencia == "1" ? "Actual" : "Reserva Presupuestal";
+
+                // Limpiar detalle anterior
+                await _detailRepository.WipeByVigenciaAsync(anioVigForWipe, cancellationToken);
+
+                int exitosos = 0, fallidos = 0;
+
+                foreach (var rp in todosLosRegistros)
+                {
+                    if (string.IsNullOrWhiteSpace(rp.CodigoCompromiso) ||
+                        !int.TryParse(rp.CodigoCompromiso.Trim(), out var codRp) ||
+                        codRp <= 0)
+                    {
+                        fallidos++;
+                        continue;
+                    }
+
+                    try
+                    {
+                        var bodyDetalle = new ConsultarCompromisoRequestDto
+                        {
+                            Pci                      = request.PCI,
+                            CodCompromisoPptalGastos = codRp,
+                            Vigencia                 = vigenciaSiif
+                        };
+
+                        var detalle = await _siifBudgetService
+                            .ConsultarCompromisoPptalAsync(bodyDetalle, headers, cancellationToken);
+
+                        if (detalle == null || detalle.Codigo <= 0)
+                        {
+                            fallidos++;
+                            continue;
+                        }
+
+                        var entidadDetalle = MapToDetailEntity(detalle, anioVigForWipe);
+                        entidadDetalle.Oid       = Guid.NewGuid().ToString("N").ToUpperInvariant();
+                        entidadDetalle.BnCreated = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                        entidadDetalle.NrVersion = 1;
+                        entidadDetalle.FgEnabled = 1;
+                        entidadDetalle.FgSystem  = 0;
+
+                        await _detailRepository.SaveAsync(entidadDetalle, cancellationToken);
+                        exitosos++;
+
+                        await _audit.InfoAsync(idTramite, SiifPuntoDeControl.InsercionBd,
+                            $"✅ [Fase 2] RP {codRp} guardado en DYNTBLCCOMPPTAL.",
+                            null, null, null, null, null, usuario, cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        fallidos++;
+                        await _audit.ErrorAsync(idTramite, SiifPuntoDeControl.FinError,
+                            $"❌ [Fase 2] Error RP {codRp}: {ex.Message}",
+                            null, null, null, null, SiifAuditoriaEstadoFinal.Parcial,
+                            usuario, ex, cancellationToken);
+                    }
+                }
+
+                await _audit.InfoAsync(idTramite, SiifPuntoDeControl.FinExitoso,
+                    $"📊 [Fase 2] Detalle completo. Exitosos={exitosos}, Fallidos={fallidos}.",
+                    null, null, null, null, SiifAuditoriaEstadoFinal.Exitoso, usuario, cancellationToken);
+            }
+
             return lastResponse ?? new ConsultaListaCompromisoPaginadaResponseDto();
         }
 
@@ -310,6 +381,86 @@ namespace SSF.Interop.SIIFNacion.Application.Features.SIIF.Requests.Queries
                                           DateTimeStyles.None, out var fecha)
                 ? fecha
                 : null;
+        }
+
+        private static DynTblCCompPtal MapToDetailEntity(
+            ConsultarCompromisoResponseDto siif, string vigencia)
+        {
+            var ahora = DateTime.Now;
+            return new DynTblCCompPtal
+            {
+                IdCompromiso   = siif.Codigo,
+                VigenciaNm     = siif.Vigencia,
+                FechaRegistro  = siif.FechaRegistro,
+                Estado         = siif.Estado,
+                CodCdp         = siif.CodigoCdp,
+                FechaCdp       = siif.FechaCdp,
+                CodMoneda      = siif.CodigoMoneda,
+                NmMoneda       = siif.NombreMoneda,
+                ValorTasa      = siif.ValorTasa,
+                Descripcion    = siif.Descripcion,
+                Objeto         = siif.Objeto,
+                ValorInicial   = siif.ValorInicial,
+                VlIniOriMoneda = siif.ValorInicialOriginalMoneda,
+                VlTOperacion   = siif.ValorTotalOperacion,
+                ValorActual    = siif.ValorActual,
+                SaldoXObligar  = siif.SaldoPorObligar,
+                SaldoMoneda    = siif.SaldoMoneda,
+                TtDocumento    = siif.Tercero?.TipoDocumento,
+                TnDocumento    = LimpiarNumeroDocumento(siif.Tercero?.NumeroDocumento),
+                TerceroNm      = siif.Tercero?.Nombre,
+                MedioPago      = siif.MedioPago,
+                CuentaNn       = siif.DetalleCuentaBancaria?.Numero,
+                CuentaEntFinan = siif.DetalleCuentaBancaria?.EntidadFinanciera,
+                CuentaTipo     = siif.DetalleCuentaBancaria?.TipoCuenta,
+                CuentaEstado   = siif.DetalleCuentaBancaria?.Estado,
+                OrdenadorTDoc  = siif.DetalleOrdenadorGasto?.TipoDocumento,
+                OrdenadorNDoc  = siif.DetalleOrdenadorGasto?.NumeroDocumento,
+                OrdenadorNm    = siif.DetalleOrdenadorGasto?.Nombre,
+                OrdenadorConsec = siif.DetalleOrdenadorGasto?.Consecutivo,
+                OrdenadorCodCar = siif.DetalleOrdenadorGasto?.CodigoCargo,
+                OrdenadorNmCarg = siif.DetalleOrdenadorGasto?.NombreCargo,
+                NnDocSoporte   = siif.DatosAdministrativos?.NumeroDocumentoSoporte?.Replace(".", "").Trim(),
+                TDocSoporte    = siif.DatosAdministrativos?.TipoDocumentoSoporte,
+                DtDocSoporte   = siif.DatosAdministrativos?.Fecha,
+                CajaMenor      = siif.CajaMenor?.ToString(),
+                FechaCarga     = ahora,
+                AnioVigencia   = vigencia,
+                Items = siif.ListadoItemsAfectacion.Select(x => new DynTblListItemsAfe
+                {
+                    Oid          = Guid.NewGuid().ToString("N").ToUpperInvariant(),
+                    NrVersion    = 1,
+                    BnCreated    = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                    FgEnabled    = 1,
+                    FgSystem     = 0,
+                    IdCompromiso = (decimal?)siif.Codigo,
+                    CodDepAfecta = x.CodigoDependenciaAfectacion,
+                    NmDepAfecta  = x.NombreDependenciaAfectacion,
+                    CodPGasto    = x.CodigoPosicionGasto,
+                    NmPGasto     = x.NombrePosicionGasto,
+                    CodFFinan    = x.CodigoFuenteFinanciacion,
+                    NmFFinan     = x.NombreFuenteFinanciacion,
+                    CodRPPtal    = x.CodigoRecursoPresupuestal,
+                    NmRPPtal     = x.NombreRecursoPresupuestal,
+                    CodSFondo    = x.CodigoSituacionFondos,
+                    NmSFondo     = x.NombreSituacionFondos,
+                    VlInicial    = x.ValorInicial,
+                    VlOperaciones = x.ValorOperaciones,
+                    VlActual     = x.ValorActual,
+                    Saldo        = x.Saldo,
+                    FechaCarga   = ahora,
+                    AnioVigencia = vigencia
+                }).ToList()
+            };
+        }
+
+        private static string? LimpiarNumeroDocumento(string? valor)
+        {
+            if (string.IsNullOrWhiteSpace(valor)) return null;
+            var limpio = valor.Trim().Replace(".", "").Replace(",", ".");
+            if (decimal.TryParse(limpio, NumberStyles.Any, CultureInfo.InvariantCulture, out var d))
+                return ((long)Math.Truncate(d)).ToString(CultureInfo.InvariantCulture);
+            return valor.Replace(".", "").Trim();
         }
     }
 }
